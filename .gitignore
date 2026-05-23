@@ -1,0 +1,15 @@
+.env
+.env.*
+__pycache__/
+*.pyc
+venv/
+env/
+.venv/
+chroma_db/
+sentence_transformers_cache/
+models/
+.pytest_cache/
+.DS_Store
+*.log
+uploads/
+*.pdf
