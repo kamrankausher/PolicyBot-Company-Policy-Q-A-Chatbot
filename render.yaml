@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: policybot-backend
+    env: python
+    region: singapore
+    # Use the free instance type for deployment
+    instanceType: free
+    # Install Python requirements
+    buildCommand: pip install -r requirements.txt
+    # Start uvicorn server binding to the environment's PORT variable
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        # Do not sync the API key from render.yaml; enter it manually in Render Dashboard
+        sync: false
+      - key: SENTENCE_TRANSFORMERS_HOME
+        # Cache for sentence-transformers models to a writable temp directory
+        value: /tmp/st_cache
