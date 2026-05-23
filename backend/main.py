@@ -8,8 +8,11 @@ import uuid
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends
+from sqlalchemy.orm import Session
+import json
 
-load_dotenv()
+from backend.db import get_db, ChatMessageModel
 
 from backend.models import (
     UploadResponse,
@@ -36,14 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory chat history store: { session_id: [ChatMessage, ...] }
-chat_histories: dict[str, list[ChatMessage]] = {}
+# In-memory chat history replaced with SQLAlchemy database
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Accept a PDF upload, extract text, chunk it, embed it, and store in ChromaDB."""
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
@@ -62,7 +64,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
 
-    chat_histories[session_id] = []
+    # No need to initialize chat_histories array anymore
 
     return UploadResponse(
         message="Document uploaded and indexed successfully.",
@@ -73,30 +75,42 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 @app.post("/ask", response_model=AnswerResponse)
-async def ask_question(request: QuestionRequest):
+async def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
     """Retrieve relevant chunks and generate an answer using Gemini."""
     if not request.session_id.strip() or not request.question.strip():
         raise HTTPException(status_code=400, detail="session_id and question must not be empty.")
 
     source_chunks = search_similar_chunks(request.question, request.session_id)
 
+    # Fetch history from database
+    db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == request.session_id).order_by(ChatMessageModel.timestamp).all()
+    
     history_dicts = [
         {"role": msg.role, "content": msg.content}
-        for msg in chat_histories.get(request.session_id, [])
+        for msg in db_messages
     ]
 
     answer, confidence = generate_answer(request.question, source_chunks, history_dicts)
 
-    # Store conversation in memory
-    if request.session_id not in chat_histories:
-        chat_histories[request.session_id] = []
-
-    chat_histories[request.session_id].append(
-        ChatMessage(role="user", content=request.question)
+    # Store conversation in database
+    user_msg = ChatMessageModel(
+        session_id=request.session_id,
+        role="user",
+        content=request.question,
     )
-    chat_histories[request.session_id].append(
-        ChatMessage(role="assistant", content=answer, sources=source_chunks)
+    
+    # Store sources as JSON if present
+    sources_json = json.dumps([s.model_dump() for s in source_chunks]) if source_chunks else None
+    bot_msg = ChatMessageModel(
+        session_id=request.session_id,
+        role="assistant",
+        content=answer,
+        sources=sources_json
     )
+    
+    db.add(user_msg)
+    db.add(bot_msg)
+    db.commit()
 
     return AnswerResponse(
         answer=answer,
@@ -107,13 +121,20 @@ async def ask_question(request: QuestionRequest):
 
 
 @app.get("/history/{session_id}", response_model=list[ChatMessage])
-async def get_history(session_id: str):
+async def get_history(session_id: str, db: Session = Depends(get_db)):
     """Return the full chat history for a given session."""
-    return chat_histories.get(session_id, [])
+    db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).order_by(ChatMessageModel.timestamp).all()
+    
+    response = []
+    for msg in db_messages:
+        sources = json.loads(msg.sources) if msg.sources else None
+        response.append(ChatMessage(role=msg.role, content=msg.content, sources=sources))
+        
+    return response
 
 
 @app.delete("/session/{session_id}")
-async def clear_session(session_id: str):
+async def clear_session(session_id: str, db: Session = Depends(get_db)):
     """Delete the ChromaDB collection and chat history for a session."""
     from backend.database import chroma_client
 
@@ -122,7 +143,8 @@ async def clear_session(session_id: str):
     except Exception:
         pass  # Collection may not exist — that's fine
 
-    chat_histories.pop(session_id, None)
+    db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).delete()
+    db.commit()
     return {"message": "Session cleared"}
 
 
