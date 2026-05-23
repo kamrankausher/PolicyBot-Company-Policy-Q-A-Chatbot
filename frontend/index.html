@@ -911,7 +911,9 @@
                 uploadStatus.classList.remove("error");
                 uploadStatus.classList.add("visible");
 
-                // Enable chat
+                // Enable chat and save session
+                localStorage.setItem("policybot_session", currentSessionId);
+                localStorage.setItem("policybot_doc", data.document_name);
                 questionInput.disabled = false;
                 btnSend.disabled = false;
                 headerDot.classList.add("active");
@@ -1080,7 +1082,9 @@
             headerDot.classList.remove("active");
             headerStatusText.textContent = "Upload a document to begin";
 
-            // Reset sidebar
+            // Reset sidebar and localStorage
+            localStorage.removeItem("policybot_session");
+            localStorage.removeItem("policybot_doc");
             uploadArea.style.display = "block";
             uploadStatus.classList.remove("visible");
             uploadSpinner.classList.remove("visible");
@@ -1138,6 +1142,52 @@
                 .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
                 .replace(/\n/g, "<br>");
         }
+
+        // ===== INITIALIZATION =====
+        window.addEventListener("DOMContentLoaded", async () => {
+            const savedSession = localStorage.getItem("policybot_session");
+            const savedDoc = localStorage.getItem("policybot_doc") || "Previous Document";
+            
+            if (savedSession) {
+                currentSessionId = savedSession;
+                
+                // Hide upload area, show status
+                uploadArea.style.display = "none";
+                statusIcon.textContent = "✅";
+                statusDocName.textContent = savedDoc;
+                statusChunks.textContent = "Session restored";
+                statusBadge.textContent = "Ready to chat";
+                statusBadge.style.color = "var(--success)";
+                statusBadge.style.background = "rgba(16,185,129,0.12)";
+                uploadStatus.classList.remove("error");
+                uploadStatus.classList.add("visible");
+                
+                // Enable chat
+                questionInput.disabled = false;
+                btnSend.disabled = false;
+                headerDot.classList.add("active");
+                headerStatusText.textContent = "Session restored";
+                emptyState.style.display = "none";
+                
+                // Fetch history
+                try {
+                    const res = await fetch(`${API_BASE}/history/${currentSessionId}`);
+                    if (res.ok) {
+                        const history = await res.json();
+                        history.forEach(msg => {
+                            if (msg.role === "user") {
+                                appendUserMessage(msg.content);
+                            } else {
+                                // Default confidence to Medium for restored messages if not stored
+                                appendBotMessage(msg.content, msg.sources, "Medium");
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to restore history:", e);
+                }
+            }
+        });
     </script>
 </body>
 </html>
