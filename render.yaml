@@ -2,19 +2,13 @@ services:
   - type: web
     name: policybot-backend
     env: python
-    region: singapore
-    # Use the free instance type for deployment
-    instanceType: free
-    # Install Python requirements
-    buildCommand: pip install -r requirements.txt
-    # Start uvicorn server binding to the environment's PORT variable
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
-    autoDeploy: true
+    region: singapore # Hosted close to users
+    buildCommand: pip install -r requirements.txt # Install dependencies from requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT # Start FastAPI on the port provided by Render
+    healthCheckPath: /health # Render will poll this endpoint to confirm app is running
+    autoDeploy: true # Automatically deploy on new commits
     envVars:
       - key: GEMINI_API_KEY
-        # Do not sync the API key from render.yaml; enter it manually in Render Dashboard
-        sync: false
+        sync: false # Do not sync from repo, manual entry in Render dashboard required
       - key: SENTENCE_TRANSFORMERS_HOME
-        # Cache for sentence-transformers models to a writable temp directory
-        value: /tmp/st_cache
+        value: /tmp/st_cache # Store downloaded sentence transformer models in temp directory

@@ -6,13 +6,13 @@ Exposes endpoints for PDF upload, question answering, chat history, and session 
 import os
 import uuid
 from dotenv import load_dotenv
+
+# Call load_dotenv at startup
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Depends
-from sqlalchemy.orm import Session
 import json
-
-from backend.db import get_db, ChatMessageModel
 
 from backend.models import (
     UploadResponse,
@@ -30,7 +30,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow all origins so the frontend can call from file:// or any host
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,13 +38,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory chat history replaced with SQLAlchemy database
+# In-memory chat history storage
+chat_histories: dict[str, list[dict]] = {}
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_pdf(file: UploadFile = File(...)):
     """Accept a PDF upload, extract text, chunk it, embed it, and store in ChromaDB."""
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
@@ -64,7 +64,7 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
 
-    # No need to initialize chat_histories array anymore
+    chat_histories[session_id] = []
 
     return UploadResponse(
         message="Document uploaded and indexed successfully.",
@@ -75,42 +75,31 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
 
 
 @app.post("/ask", response_model=AnswerResponse)
-async def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
+async def ask_question(request: QuestionRequest):
     """Retrieve relevant chunks and generate an answer using Gemini."""
     if not request.session_id.strip() or not request.question.strip():
         raise HTTPException(status_code=400, detail="session_id and question must not be empty.")
 
     source_chunks = search_similar_chunks(request.question, request.session_id)
 
-    # Fetch history from database
-    db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == request.session_id).order_by(ChatMessageModel.timestamp).all()
-    
-    history_dicts = [
-        {"role": msg.role, "content": msg.content}
-        for msg in db_messages
-    ]
+    if request.session_id not in chat_histories:
+        chat_histories[request.session_id] = []
+
+    history_dicts = chat_histories[request.session_id]
 
     answer, confidence = generate_answer(request.question, source_chunks, history_dicts)
 
-    # Store conversation in database
-    user_msg = ChatMessageModel(
-        session_id=request.session_id,
-        role="user",
-        content=request.question,
-    )
+    chat_histories[request.session_id].append({
+        "role": "user",
+        "content": request.question,
+        "sources": None
+    })
     
-    # Store sources as JSON if present
-    sources_json = json.dumps([s.model_dump() for s in source_chunks]) if source_chunks else None
-    bot_msg = ChatMessageModel(
-        session_id=request.session_id,
-        role="assistant",
-        content=answer,
-        sources=sources_json
-    )
-    
-    db.add(user_msg)
-    db.add(bot_msg)
-    db.commit()
+    chat_histories[request.session_id].append({
+        "role": "assistant",
+        "content": answer,
+        "sources": [s.model_dump() for s in source_chunks] if source_chunks else None
+    })
 
     return AnswerResponse(
         answer=answer,
@@ -121,30 +110,32 @@ async def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/history/{session_id}", response_model=list[ChatMessage])
-async def get_history(session_id: str, db: Session = Depends(get_db)):
+async def get_history(session_id: str):
     """Return the full chat history for a given session."""
-    db_messages = db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).order_by(ChatMessageModel.timestamp).all()
-    
-    response = []
-    for msg in db_messages:
-        sources = json.loads(msg.sources) if msg.sources else None
-        response.append(ChatMessage(role=msg.role, content=msg.content, sources=sources))
+    if session_id not in chat_histories:
+        return []
         
-    return response
+    return [ChatMessage(**msg) for msg in chat_histories[session_id]]
 
 
 @app.delete("/session/{session_id}")
-async def clear_session(session_id: str, db: Session = Depends(get_db)):
+async def clear_session(session_id: str):
     """Delete the ChromaDB collection and chat history for a session."""
-    from backend.database import chroma_client
-
+    try:
+        from backend.database import chroma_client
+    except ImportError:
+        # Fallback to importing directly from chromadb or creating it if database.py doesn't exist
+        import chromadb
+        chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        
     try:
         chroma_client.delete_collection(name=f"policy_{session_id}")
     except Exception:
-        pass  # Collection may not exist — that's fine
+        pass  # Collection may not exist
 
-    db.query(ChatMessageModel).filter(ChatMessageModel.session_id == session_id).delete()
-    db.commit()
+    if session_id in chat_histories:
+        del chat_histories[session_id]
+        
     return {"message": "Session cleared"}
 
 
