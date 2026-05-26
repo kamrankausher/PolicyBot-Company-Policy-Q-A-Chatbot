@@ -832,7 +832,9 @@
 
     <script>
         // ===== CONFIG =====
-        const API_BASE = "http://localhost:8000";
+        // Empty string = use relative URLs (works on any domain: localhost, Render, etc.)
+        // Change to a full URL only if frontend and backend are on different domains
+        const API_BASE = "";
 
         // ===== STATE =====
         let currentSessionId = null;

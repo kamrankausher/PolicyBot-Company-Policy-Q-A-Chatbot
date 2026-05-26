@@ -1,10 +1,12 @@
 """
 FastAPI application — the main entry point for PolicyBot backend.
 Exposes endpoints for PDF upload, question answering, chat history, and session management.
+Also serves the frontend index.html so no separate hosting is required.
 """
 
 import os
 import uuid
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Call load_dotenv at startup
@@ -12,6 +14,8 @@ load_dotenv()
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import json
 
 from backend.models import (
@@ -42,6 +46,24 @@ app.add_middleware(
 chat_histories: dict[str, list[dict]] = {}
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Resolve the frontend directory relative to this file
+# Works both locally and on Render
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+
+# Serve static assets (CSS, JS, images) from the frontend folder
+# This must be mounted BEFORE defining API routes to avoid conflicts
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    """Serve the frontend SPA from the root URL."""
+    index_path = FRONTEND_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found.")
+    return FileResponse(str(index_path))
 
 
 @app.post("/upload", response_model=UploadResponse)
