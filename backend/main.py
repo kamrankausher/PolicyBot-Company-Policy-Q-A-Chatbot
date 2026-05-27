@@ -45,6 +45,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+def startup_event():
+    # Create the tables if they don't exist
+    from backend.db import Base, engine
+    Base.metadata.create_all(bind=engine)
+
 # In-memory chat history replaced by SQLAlchemy database
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB

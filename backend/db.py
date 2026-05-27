@@ -31,7 +31,8 @@ class ChatMessageModel(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 # Create the tables if they don't exist
-Base.metadata.create_all(bind=engine)
+# We moved this to main.py startup event to prevent blocking uvicorn port binding!
+# Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
