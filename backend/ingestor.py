@@ -9,8 +9,14 @@ except ImportError:
 from sentence_transformers import SentenceTransformer
 from backend.database import chroma_client
 
-# Load embedding model once at module level for performance
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Lazy load the embedding model to prevent blocking uvicorn startup
+embedding_model = None
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return embedding_model
 
 
 def extract_text_by_page(file_bytes: bytes) -> list[dict]:
@@ -58,7 +64,8 @@ def embed_and_store(chunks: list[dict], session_id: str) -> int:
     collection = chroma_client.get_or_create_collection(name=collection_name)
 
     texts = [chunk["text"] for chunk in chunks]
-    embeddings = embedding_model.encode(texts).tolist()
+    model = get_embedding_model()
+    embeddings = model.encode(texts).tolist()
 
     ids = [f"chunk_{i}" for i in range(len(chunks))]
     metadatas = [
