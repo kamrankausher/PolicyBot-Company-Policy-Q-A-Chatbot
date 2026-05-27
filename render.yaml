@@ -8,6 +8,8 @@ services:
     healthCheckPath: /health # Render will poll this endpoint to confirm app is running
     autoDeploy: true # Automatically deploy on new commits
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9 # Force Python 3.11 to avoid pydantic-core Rust build errors on Python 3.14
       - key: GEMINI_API_KEY
         sync: false # Do not sync from repo, manual entry in Render dashboard required
       - key: SENTENCE_TRANSFORMERS_HOME
