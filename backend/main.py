@@ -45,12 +45,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def startup_event():
-    # Create the tables if they don't exist
-    from backend.db import Base, engine
-    Base.metadata.create_all(bind=engine)
-
 # In-memory chat history replaced by SQLAlchemy database
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -191,3 +185,8 @@ async def health_check():
         "model": "gemini-1.5-flash",
         "embeddings": "all-MiniLM-L6-v2",
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

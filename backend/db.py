@@ -31,10 +31,16 @@ class ChatMessageModel(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 # Create the tables if they don't exist
-# We moved this to main.py startup event to prevent blocking uvicorn port binding!
-# Base.metadata.create_all(bind=engine)
+# We moved this to lazy-loading in get_db to absolutely guarantee it never blocks uvicorn startup!
+
+_tables_created = False
 
 def get_db():
+    global _tables_created
+    if not _tables_created:
+        Base.metadata.create_all(bind=engine)
+        _tables_created = True
+
     db = SessionLocal()
     try:
         yield db
