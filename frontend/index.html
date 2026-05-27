@@ -885,7 +885,9 @@
                 return;
             }
 
-            // Show uploading state
+            // Reset sidebar and localStorage
+            localStorage.removeItem("policybot_session");
+            localStorage.removeItem("policybot_doc");
             uploadArea.style.display = "none";
             uploadStatus.classList.remove("visible");
             uploadSpinner.classList.add("visible");
@@ -1164,7 +1166,7 @@
                 uploadStatus.classList.remove("error");
                 uploadStatus.classList.add("visible");
                 
-                // Enable chat
+                // Enable chat and save session
                 questionInput.disabled = false;
                 btnSend.disabled = false;
                 headerDot.classList.add("active");
