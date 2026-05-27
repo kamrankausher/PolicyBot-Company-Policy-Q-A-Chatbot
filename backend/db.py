@@ -7,6 +7,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # For local development we use SQLite. In production, this can be changed to a PostgreSQL URL.
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chat_history.db")
 
+# Fix for Render: Render provides `postgres://` but SQLAlchemy 2.0+ requires `postgresql://`
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(
     DATABASE_URL, 
     # check_same_thread=False is needed only for SQLite in FastAPI
