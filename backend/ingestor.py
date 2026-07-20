@@ -2,10 +2,8 @@
 PDF ingestion module: extracts text from PDFs, chunks it, embeds it, and stores in ChromaDB.
 """
 
-try:
-    import fitz  # PyMuPDF < 1.25
-except ImportError:
-    import pymupdf as fitz  # PyMuPDF >= 1.25
+import io
+from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 from backend.database import chroma_client
 
@@ -23,13 +21,12 @@ def extract_text_by_page(file_bytes: bytes) -> list[dict]:
     """Extract text from each page of a PDF. Skips pages with less than 50 characters."""
     pages = []
     try:
-        doc = fitz.open(stream=file_bytes, filetype="pdf")
-        for page_num in range(len(doc)):
-            page = doc.load_page(page_num)
-            text = page.get_text("text").strip()
+        reader = PdfReader(io.BytesIO(file_bytes))
+        for page_num, page in enumerate(reader.pages):
+            text = page.extract_text()
+            text = text.strip() if text else ""
             if len(text) >= 50:
                 pages.append({"page_number": page_num + 1, "text": text})
-        doc.close()
     except Exception:
         return []
     if not pages:
