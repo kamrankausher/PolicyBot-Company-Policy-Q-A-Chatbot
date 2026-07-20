@@ -26,7 +26,7 @@ Question + Context -> Gemini LLM -> Final Answer + Confidence Score
 | Layer | Technology | Why I Used It |
 | --- | --- | --- |
 | **Backend** | FastAPI | High performance, automatic validation with Pydantic, and built-in interactive API docs (Swagger UI). |
-| **Frontend** | Vanilla HTML/CSS/JS | Lightweight, dependency-free. Features a premium Day/Night theme, Space Grotesk typography, and 3D animated robotic SVGs. |
+| **Frontend** | Vanilla HTML/CSS/JS | No frameworks required. Features an **Ultra-Premium UI** with bespoke glassmorphism, animated mesh gradient backgrounds, floating input docks, Space Grotesk typography, and fluid cubic-bezier micro-animations. |
 | **Vector DB** | ChromaDB | Fast, open-source local vector database ideal for indexing document embeddings. |
 | **Embeddings** | sentence-transformers | `all-MiniLM-L6-v2` is compact and generates high-quality semantic embeddings locally. |
 | **LLM** | Google Gemini API | `gemini-1.5-flash` provides incredibly fast, cost-effective, and highly accurate text generation. |
