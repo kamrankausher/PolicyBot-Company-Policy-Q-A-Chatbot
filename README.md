@@ -26,7 +26,7 @@ Question + Context -> Gemini LLM -> Final Answer + Confidence Score
 | Layer | Technology | Why I Used It |
 | --- | --- | --- |
 | **Backend** | FastAPI | High performance, automatic validation with Pydantic, and built-in interactive API docs (Swagger UI). |
-| **Frontend** | Vanilla HTML/CSS/JS | Lightweight, dependency-free, and easy to deploy. No complex build step required. |
+| **Frontend** | Vanilla HTML/CSS/JS | Lightweight, dependency-free. Features a premium Day/Night theme, Space Grotesk typography, and 3D animated robotic SVGs. |
 | **Vector DB** | ChromaDB | Fast, open-source local vector database ideal for indexing document embeddings. |
 | **Embeddings** | sentence-transformers | `all-MiniLM-L6-v2` is compact and generates high-quality semantic embeddings locally. |
 | **LLM** | Google Gemini API | `gemini-1.5-flash` provides incredibly fast, cost-effective, and highly accurate text generation. |
@@ -113,18 +113,15 @@ pytest tests/test_api.py -v
 
 ## Deployment
 
-**Backend (Render.com)**
+**Unified Deployment (Render.com)**
+This project is built as a unified service. The FastAPI backend automatically serves the `index.html` frontend from the root URL `/`, meaning you only need to deploy a single web service.
+
 1. Push your repository to GitHub.
 2. Sign up on [Render.com](https://render.com) and click "New Web Service".
 3. Connect your GitHub repository.
-4. Render will automatically detect the `render.yaml` configuration and deploy the FastAPI backend.
+4. Render will automatically detect the `render.yaml` configuration and deploy the application.
 5. In your Render Dashboard, add the `GEMINI_API_KEY` to your environment variables.
-
-**Frontend (Netlify or Vercel)**
-1. Open `frontend/index.html`.
-2. Locate line 835: `const API_BASE = "http://localhost:8000";`
-3. Change it to your live Render backend URL, e.g., `const API_BASE = "https://policybot-backend.onrender.com";`
-4. Drag and drop the `frontend` folder into Netlify Drop, or push the folder to Vercel/GitHub Pages.
+6. Once deployed, simply visit your Render URL to see the fully functioning UI and Backend.
 
 ## How I Would Explain This in an Interview
 "PolicyBot is an AI-powered QA assistant that allows employees to securely query company policy documents and get instant, cited answers. It uses a Retrieval-Augmented Generation (RAG) architecture, which means it extracts text from PDFs, stores semantic chunks in a local vector database, and retrieves only the most relevant sections when a user asks a question. By combining FastAPI, ChromaDB, and the Google Gemini API, the system seamlessly generates accurate responses backed by direct excerpts from the provided document. Ultimately, this eliminates the friction of manually searching through massive policy handbooks, saving significant time while ensuring compliance and transparency."
