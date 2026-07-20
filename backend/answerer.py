@@ -11,7 +11,7 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Initialize the Gemini model once at module level
-gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+gemini_model = genai.GenerativeModel("gemini-pro")
 
 SYSTEM_PROMPT = """You are a helpful company policy assistant.
 Answer questions ONLY based on the provided policy document excerpts below.

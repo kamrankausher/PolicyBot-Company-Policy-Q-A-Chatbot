@@ -383,19 +383,31 @@
         .btn-clear {
             width: 100%;
             padding: 10px;
-            background: transparent;
-            border: 1px solid var(--danger);
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
             border-radius: 10px;
             color: var(--danger);
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 500;
             font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-clear:hover {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        }
+
+        .btn-clear svg {
+            width: 14px;
+            height: 14px;
         }
 
         .sidebar-links {
@@ -465,6 +477,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 28px;
+            padding-bottom: 120px; /* Space for floating dock */
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -719,15 +732,24 @@
 
         /* ===== INPUT AREA ===== */
         .input-area {
-            min-height: 80px;
-            padding: 16px 28px;
-            border-top: 1px solid var(--border);
-            background: var(--bg-sidebar);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 48px);
+            max-width: 800px;
+            min-height: 60px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-highlight);
+            border-radius: 24px;
+            background: var(--bg-input);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
             gap: 12px;
+            z-index: 100;
         }
 
         .input-wrapper {
@@ -739,53 +761,38 @@
             width: 100%;
             padding: 14px 18px;
             padding-right: 60px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 14px;
+            background: transparent;
+            border: none;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 15px;
             font-family: 'Inter', sans-serif;
             outline: none;
-            transition: border-color 0.25s, box-shadow 0.25s;
         }
 
         #questionInput::placeholder { color: var(--text-muted); }
 
-        #questionInput:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px var(--glow-blue);
-        }
-
-        #questionInput:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .char-counter {
-            position: absolute;
-            right: 14px;
-            bottom: -18px;
-            font-size: 10px;
-            color: var(--text-muted);
-        }
-
         .btn-send {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
             border: none;
+            border-radius: 50%;
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            box-shadow: 0 4px 15px var(--accent-glow);
             transition: all 0.25s ease;
             flex-shrink: 0;
         }
 
         .btn-send:hover {
-            transform: scale(1.05);
+            transform: translateY(-50%) scale(1.05);
             box-shadow: 0 4px 16px var(--glow-blue);
         }
 
@@ -859,16 +866,22 @@
             <div class="sidebar-section" id="suggestionsSection">
                 <div class="section-label">Suggested Questions</div>
                 <div class="question-pills">
-                    <button class="question-pill" onclick="fillQuestion('What is the leave policy?')">💬 What is the leave policy?</button>
-                    <button class="question-pill" onclick="fillQuestion('What are working hours?')">⏰ What are working hours?</button>
-                    <button class="question-pill" onclick="fillQuestion('How to report an issue?')">📝 How to report an issue?</button>
-                    <button class="question-pill" onclick="fillQuestion('What is the code of conduct?')">📋 What is the code of conduct?</button>
+                    <button class="question-pill" onclick="fillQuestion('What is the leave policy?')">What is the leave policy?</button>
+                    <button class="question-pill" onclick="fillQuestion('What are working hours?')">What are working hours?</button>
+                    <button class="question-pill" onclick="fillQuestion('How to report an issue?')">How to report an issue?</button>
+                    <button class="question-pill" onclick="fillQuestion('What is the code of conduct?')">What is the code of conduct?</button>
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="sidebar-footer">
-                <button class="btn-clear" id="btnClear" onclick="clearSession()">🗑️ Clear Session</button>
+                <button class="btn-clear" id="btnClear" onclick="clearSession()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Clear Session
+                </button>
                 <div class="sidebar-links">
                     <a href="https://github.com" target="_blank">Built with ❤️ for portfolio</a>
                 </div>
