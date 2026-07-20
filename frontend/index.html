@@ -6,36 +6,110 @@
     <meta name="description" content="PolicyBot — AI-powered Company Policy Q&A Chatbot. Upload a policy PDF and get instant, source-cited answers.">
     <title>PolicyBot — AI Policy Assistant</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <!-- Markdown Parsers -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.3/purify.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500&display=swap');
 
         /* ===== RESET & BASE ===== */
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-primary: #0A0F1E;
-            --bg-sidebar: #0D1426;
-            --bg-card: #141B2D;
-            --accent-blue: #3B82F6;
-            --accent-purple: #8B5CF6;
-            --text-primary: #F1F5F9;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --border: #1E2A45;
-            --success: #10B981;
-            --warning: #F59E0B;
-            --danger: #EF4444;
-            --glow-blue: rgba(59, 130, 246, 0.3);
-            --glow-purple: rgba(139, 92, 246, 0.2);
+            /* Dark Theme (Default) */
+            --bg-primary: #09090b;
+            --bg-sidebar: rgba(15, 17, 26, 0.65);
+            --bg-card: rgba(24, 24, 27, 0.7);
+            --bg-bubble-bot: rgba(39, 39, 42, 0.85);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glow-blue: rgba(59, 130, 246, 0.5);
+            --glow-purple: rgba(139, 92, 246, 0.4);
+            
+            --bg-gradient-1: rgba(59, 130, 246, 0.12);
+            --bg-gradient-2: rgba(139, 92, 246, 0.12);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-sidebar: rgba(255, 255, 255, 0.75);
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-bubble-bot: rgba(255, 255, 255, 0.95);
+            --accent-blue: #2563eb;
+            --accent-purple: #7c3aed;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: rgba(0, 0, 0, 0.08);
+            --glow-blue: rgba(37, 99, 235, 0.3);
+            --glow-purple: rgba(124, 58, 237, 0.2);
+            
+            --bg-gradient-1: rgba(37, 99, 235, 0.05);
+            --bg-gradient-2: rgba(124, 58, 237, 0.05);
         }
 
         html, body {
             height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
             background: var(--bg-primary);
+            background-image: radial-gradient(circle at 10% 50%, var(--bg-gradient-1), transparent 35%),
+                              radial-gradient(circle at 90% 20%, var(--bg-gradient-2), transparent 35%);
             color: var(--text-primary);
             overflow: hidden;
+            transition: background 0.5s ease, color 0.5s ease;
         }
+
+
+        /* 3D Animations */
+        @keyframes float3d {
+            0% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+            33% { transform: translateY(-4px) rotateX(5deg) rotateY(5deg); }
+            66% { transform: translateY(2px) rotateX(-5deg) rotateY(-5deg); }
+            100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+        }
+        
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 5px var(--accent-blue)); }
+            50% { filter: drop-shadow(0 0 15px var(--accent-purple)); }
+            100% { filter: drop-shadow(0 0 5px var(--accent-blue)); }
+        }
+
+        @keyframes messageSlideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .avatar.bot-avatar svg {
+            animation: float3d 4s ease-in-out infinite;
+        }
+        
+        .avatar.bot-avatar.typing svg {
+            animation: float3d 1.5s ease-in-out infinite, pulseGlow 2s infinite;
+        }
+
+        .message-row {
+            animation: messageSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Hover Effects */
+        .feature-card, .suggested-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .feature-card:hover, .suggested-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0 15px var(--glow-blue);
+            border-color: var(--accent-blue);
+        }
+        
+        .btn-send { transition: all 0.2s; }
+        .btn-send:not(:disabled):active { transform: scale(0.9); }
 
         /* ===== LAYOUT ===== */
         .app-container {
@@ -49,6 +123,8 @@
             width: 300px;
             min-width: 300px;
             background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
@@ -316,7 +392,9 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
-            background: var(--bg-primary);
+            background: rgba(9, 9, 11, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .header-title {
@@ -487,47 +565,33 @@
         .bubble.user-bubble {
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             color: white;
-            border-bottom-right-radius: 6px;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
         }
 
         .bubble.bot-bubble {
-            max-width: 80%;
-            background: var(--bg-card);
+            max-width: 85%;
+            background: var(--bg-bubble-bot);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--border);
-            border-left: 3px solid var(--accent-blue);
-            border-bottom-left-radius: 6px;
+            border-bottom-left-radius: 4px;
             color: var(--text-primary);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
-
-        /* Confidence Badge */
-        .confidence-badge {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 10px;
-            border-radius: 20px;
-            margin-bottom: 8px;
-        }
-
-        .confidence-badge.high {
-            color: var(--success);
-            background: rgba(16, 185, 129, 0.12);
-        }
-
-        .confidence-badge.medium {
-            color: var(--warning);
-            background: rgba(245, 158, 11, 0.12);
-        }
-
-        .confidence-badge.low {
-            color: var(--danger);
-            background: rgba(239, 68, 68, 0.12);
-        }
-
+        
         .bot-answer {
-            white-space: pre-wrap;
             word-break: break-word;
         }
+        
+        /* Markdown Styles */
+        .bot-answer p { margin-bottom: 0.75em; }
+        .bot-answer p:last-child { margin-bottom: 0; }
+        .bot-answer strong { color: #fff; font-weight: 600; }
+        .bot-answer ul, .bot-answer ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+        .bot-answer li { margin-bottom: 0.25em; }
+        .bot-answer code { background: rgba(0,0,0,0.3); padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+
 
         /* Sources Accordion */
         .sources-section {
@@ -622,6 +686,8 @@
             padding: 16px 28px;
             border-top: 1px solid var(--border);
             background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -781,13 +847,36 @@
                     <div class="status-dot" id="headerDot"></div>
                     <span id="headerStatusText">Upload a document to begin</span>
                 </div>
+                <button id="themeToggle" class="theme-toggle" aria-label="Toggle Theme" style="background: none; border: 1px solid var(--border); border-radius: 50%; width: 40px; height: 40px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); transition: all 0.3s; margin-left: auto;">
+                    <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
             </header>
 
             <!-- Messages -->
             <div class="chat-messages" id="chatMessages">
                 <!-- Empty state -->
                 <div class="empty-state" id="emptyState">
-                    <div class="empty-icon">🤖</div>
+                    <div class="empty-icon" style="margin-bottom: 20px; display: flex; justify-content: center; transform: scale(1.5);"><svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
+    <!-- 3D Robot Head -->
+    <rect x="20" y="30" width="60" height="50" rx="12" fill="url(#botGrad)" stroke="white" stroke-width="2"/>
+    <!-- Glass Visor -->
+    <rect x="28" y="45" width="44" height="20" rx="6" fill="#0A0F1E" stroke="#3B82F6" stroke-width="1.5"/>
+    <!-- Glowing Eyes -->
+    <circle cx="40" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="40" cy="55" r="2" fill="#FFFFFF"/>
+    <circle cx="60" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="60" cy="55" r="2" fill="#FFFFFF"/>
+    <!-- Antenna -->
+    <line x1="50" y1="30" x2="50" y2="15" stroke="white" stroke-width="3"/>
+    <circle cx="50" cy="12" r="4" fill="#8B5CF6"/>
+    <defs>
+        <linearGradient id="botGrad" x1="20" y1="30" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#10B981"/>
+            <stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+    </defs>
+</svg></div>
                     <div class="empty-title">Welcome to PolicyBot</div>
                     <div class="empty-subtitle">Upload a company policy document and start asking questions. Answers come directly from your document with source citations.</div>
                     <div class="feature-cards">
@@ -1000,7 +1089,19 @@
             row.className = "message-row user";
             row.innerHTML = `
                 <div class="bubble user-bubble">${escapeHtml(text)}</div>
-                <div class="avatar user-avatar">U</div>
+                <div class="avatar user-avatar" style="background: transparent; border: none; padding: 0;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
+    <circle cx="50" cy="50" r="45" fill="url(#userGrad)" stroke="white" stroke-width="2"/>
+    <circle cx="50" cy="40" r="15" fill="white"/>
+    <path d="M25 80C25 65 35 55 50 55C65 55 75 65 75 80" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <defs>
+        <linearGradient id="userGrad" x1="5" y1="5" x2="95" y2="95" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#8B5CF6"/>
+            <stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+    </defs>
+</svg>
+                </div>
             `;
             chatMessages.appendChild(row);
             autoScrollToBottom();
@@ -1034,7 +1135,28 @@
             }
 
             row.innerHTML = `
-                <div class="avatar bot-avatar">🤖</div>
+                <div class="avatar bot-avatar" style="background: transparent; border: none; padding: 0;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
+    <!-- 3D Robot Head -->
+    <rect x="20" y="30" width="60" height="50" rx="12" fill="url(#botGrad)" stroke="white" stroke-width="2"/>
+    <!-- Glass Visor -->
+    <rect x="28" y="45" width="44" height="20" rx="6" fill="#0A0F1E" stroke="#3B82F6" stroke-width="1.5"/>
+    <!-- Glowing Eyes -->
+    <circle cx="40" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="40" cy="55" r="2" fill="#FFFFFF"/>
+    <circle cx="60" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="60" cy="55" r="2" fill="#FFFFFF"/>
+    <!-- Antenna -->
+    <line x1="50" y1="30" x2="50" y2="15" stroke="white" stroke-width="3"/>
+    <circle cx="50" cy="12" r="4" fill="#8B5CF6"/>
+    <defs>
+        <linearGradient id="botGrad" x1="20" y1="30" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#10B981"/>
+            <stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+    </defs>
+</svg>
+                </div>
                 <div class="bubble bot-bubble">
                     <div class="confidence-badge ${confidenceClass}">${confidenceLabel}</div>
                     <div class="bot-answer">${formatAnswer(answer)}</div>
@@ -1050,7 +1172,28 @@
             row.className = "message-row bot";
             row.id = "typingIndicator";
             row.innerHTML = `
-                <div class="avatar bot-avatar">🤖</div>
+                <div class="avatar bot-avatar" style="background: transparent; border: none; padding: 0;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
+    <!-- 3D Robot Head -->
+    <rect x="20" y="30" width="60" height="50" rx="12" fill="url(#botGrad)" stroke="white" stroke-width="2"/>
+    <!-- Glass Visor -->
+    <rect x="28" y="45" width="44" height="20" rx="6" fill="#0A0F1E" stroke="#3B82F6" stroke-width="1.5"/>
+    <!-- Glowing Eyes -->
+    <circle cx="40" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="40" cy="55" r="2" fill="#FFFFFF"/>
+    <circle cx="60" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="60" cy="55" r="2" fill="#FFFFFF"/>
+    <!-- Antenna -->
+    <line x1="50" y1="30" x2="50" y2="15" stroke="white" stroke-width="3"/>
+    <circle cx="50" cy="12" r="4" fill="#8B5CF6"/>
+    <defs>
+        <linearGradient id="botGrad" x1="20" y1="30" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#10B981"/>
+            <stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+    </defs>
+</svg>
+                </div>
                 <div class="bubble bot-bubble">
                     <div class="typing-indicator">
                         <div class="typing-dot"></div>
@@ -1098,7 +1241,26 @@
             chatMessages.innerHTML = "";
             chatMessages.innerHTML = `
                 <div class="empty-state" id="emptyState">
-                    <div class="empty-icon">🤖</div>
+                    <div class="empty-icon" style="margin-bottom: 20px; display: flex; justify-content: center; transform: scale(1.5);"><svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
+    <!-- 3D Robot Head -->
+    <rect x="20" y="30" width="60" height="50" rx="12" fill="url(#botGrad)" stroke="white" stroke-width="2"/>
+    <!-- Glass Visor -->
+    <rect x="28" y="45" width="44" height="20" rx="6" fill="#0A0F1E" stroke="#3B82F6" stroke-width="1.5"/>
+    <!-- Glowing Eyes -->
+    <circle cx="40" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="40" cy="55" r="2" fill="#FFFFFF"/>
+    <circle cx="60" cy="55" r="4" fill="#3B82F6" filter="blur(1px)"/>
+    <circle cx="60" cy="55" r="2" fill="#FFFFFF"/>
+    <!-- Antenna -->
+    <line x1="50" y1="30" x2="50" y2="15" stroke="white" stroke-width="3"/>
+    <circle cx="50" cy="12" r="4" fill="#8B5CF6"/>
+    <defs>
+        <linearGradient id="botGrad" x1="20" y1="30" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#10B981"/>
+            <stop offset="1" stop-color="#3B82F6"/>
+        </linearGradient>
+    </defs>
+</svg></div>
                     <div class="empty-title">Welcome to PolicyBot</div>
                     <div class="empty-subtitle">Upload a company policy document and start asking questions. Answers come directly from your document with source citations.</div>
                     <div class="feature-cards">
@@ -1141,13 +1303,51 @@
         }
 
         function formatAnswer(text) {
-            // Convert markdown-style bold **text** and line breaks
-            return escapeHtml(text)
-                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                .replace(/\n/g, "<br>");
+            // Use marked.js to parse markdown and DOMPurify to sanitize
+            try {
+                const rawHtml = marked.parse(text);
+                return DOMPurify.sanitize(rawHtml);
+            } catch (e) {
+                console.error("Markdown rendering failed", e);
+                return escapeHtml(text).replace(/\n/g, "<br>");
+            }
         }
 
+        // ===== THEME TOGGLE =====
+        const themeToggle = document.getElementById('themeToggle');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIcon = document.getElementById('sunIcon');
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('policybot_theme', theme);
+            if (theme === 'light') {
+                moonIcon.style.display = 'block';
+                sunIcon.style.display = 'none';
+            } else {
+                moonIcon.style.display = 'none';
+                sunIcon.style.display = 'block';
+            }
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('policybot_theme') || 'dark';
+        setTheme(savedTheme);
+
         // ===== INITIALIZATION =====
+
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true, // add <br> on a single line break
+                gfm: true
+            });
+        }
+        
         window.addEventListener("DOMContentLoaded", async () => {
             const savedSession = localStorage.getItem("policybot_session");
             const savedDoc = localStorage.getItem("policybot_doc") || "Previous Document";
