@@ -12,3 +12,4 @@ requests
 pytest
 httpx
 sqlalchemy
+pysqlite3-binary

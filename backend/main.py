@@ -9,6 +9,11 @@ import uuid
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Fix for ChromaDB on platforms with older SQLite (e.g. Render/Ubuntu 20.04)
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 # Call load_dotenv at startup
 load_dotenv()
 
@@ -65,7 +70,11 @@ async def serve_frontend():
     index_path = FRONTEND_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="Frontend not found.")
-    return FileResponse(str(index_path))
+    return FileResponse(str(index_path), headers={
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    })
 
 
 @app.post("/upload", response_model=UploadResponse)
