@@ -3,7 +3,7 @@
 PolicyBot is a modern, AI-powered chatbot that lets employees instantly ask questions and receive answers strictly based on uploaded company policy documents.
 
 ## Live Demo
-[Live Demo Link (Update this after deployment)](https://your-deployment-url-here.render.com)
+https://policybot-company-policy-q-a-chatbot-9v89.onrender.com
 
 ## What Problem It Solves
 Employees often struggle to quickly find specific answers in lengthy company policy handbooks (e.g., leave policies, remote work guidelines). PolicyBot eliminates manual searching by instantly extracting exactly what you need, ensuring accurate answers accompanied by source citations.
