@@ -4,17 +4,17 @@ PDF ingestion module: extracts text from PDFs, chunks it, embeds it, and stores 
 
 import io
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
 from backend.database import chroma_client
 
-# Lazy load the embedding model to prevent blocking uvicorn startup
-embedding_model = None
-
-def get_embedding_model():
-    global embedding_model
-    if embedding_model is None:
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return embedding_model
+def get_embeddings(texts: list[str]) -> list[list[float]]:
+    """Get embeddings using Gemini embedding API."""
+    result = genai.embed_content(
+        model="models/gemini-embedding-001",
+        content=texts,
+        task_type="retrieval_document"
+    )
+    return result["embedding"]
 
 
 def extract_text_by_page(file_bytes: bytes) -> list[dict]:
@@ -56,13 +56,12 @@ def chunk_text(pages: list[dict], chunk_size: int = 400, overlap: int = 50) -> l
 
 
 def embed_and_store(chunks: list[dict], session_id: str) -> int:
-    """Embed chunk texts using sentence-transformers and store them in a ChromaDB collection."""
+    """Embed chunk texts using Gemini and store them in a ChromaDB collection."""
     collection_name = f"policy_{session_id}"
     collection = chroma_client.get_or_create_collection(name=collection_name)
 
     texts = [chunk["text"] for chunk in chunks]
-    model = get_embedding_model()
-    embeddings = model.encode(texts).tolist()
+    embeddings = get_embeddings(texts)
 
     ids = [f"chunk_{i}" for i in range(len(chunks))]
     metadatas = [

@@ -4,7 +4,7 @@ Retriever module: searches ChromaDB for the most relevant policy chunks given a 
 
 from fastapi import HTTPException
 from backend.models import SourceChunk
-from backend.ingestor import get_embedding_model
+from backend.ingestor import get_embeddings
 from backend.database import chroma_client
 
 
@@ -24,8 +24,7 @@ def search_similar_chunks(question: str, session_id: str, top_k: int = 4) -> lis
     if count == 0:
         return []
 
-    model = get_embedding_model()
-    question_embedding = model.encode([question]).tolist()
+    question_embedding = get_embeddings([question])
 
     results = collection.query(
         query_embeddings=question_embedding,
