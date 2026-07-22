@@ -4,6 +4,7 @@ uvicorn[standard]
 pypdf
 chromadb
 fastembed
+google-generativeai
 pydantic
 python-multipart
 python-dotenv
