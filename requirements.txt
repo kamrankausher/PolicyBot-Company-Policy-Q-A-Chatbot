@@ -3,7 +3,7 @@ fastapi
 uvicorn[standard]
 pypdf
 chromadb
-google-generativeai
+fastembed
 pydantic
 python-multipart
 python-dotenv

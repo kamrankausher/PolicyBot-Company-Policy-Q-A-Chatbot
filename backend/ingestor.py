@@ -4,30 +4,25 @@ PDF ingestion module: extracts text from PDFs, chunks it, embeds it, and stores 
 
 import io
 from pypdf import PdfReader
-import google.generativeai as genai
+from fastembed import TextEmbedding
 from backend.database import chroma_client
 
-import time
+# Lazy load fastembed model to prevent blocking uvicorn startup
+embedding_model = None
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        # BAAI/bge-small-en-v1.5 is the default, highly efficient local ONNX model
+        embedding_model = TextEmbedding()
+    return embedding_model
 
 def get_embeddings(texts: list[str]) -> list[list[float]]:
-    """Get embeddings using Gemini embedding API in batches of 90 to respect the 100 limit."""
-    all_embeddings = []
-    batch_size = 90
-    
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        result = genai.embed_content(
-            model="models/gemini-embedding-001",
-            content=batch,
-            task_type="retrieval_document"
-        )
-        all_embeddings.extend(result["embedding"])
-        
-        # Add a tiny sleep to be extremely gentle on the rate limit
-        if i + batch_size < len(texts):
-            time.sleep(1)
-            
-    return all_embeddings
+    """Get embeddings using local FastEmbed model (no rate limits)."""
+    model = get_embedding_model()
+    # fastembed returns an iterable of numpy arrays, we convert it to lists
+    embeddings = list(model.embed(texts))
+    return [e.tolist() for e in embeddings]
 
 
 def extract_text_by_page(file_bytes: bytes) -> list[dict]:
