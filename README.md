@@ -1,4 +1,4 @@
-# PolicyBot — AI Company Policy Q&A Chatbot
+# PolicyBot — Company Policy Q&A Chatbot
 
 PolicyBot is a modern, AI-powered chatbot that lets employees instantly ask questions and receive answers strictly based on uploaded company policy documents.
 
